@@ -2,6 +2,7 @@ module Ini where
 
 import Data.List
 import Data.Char
+import qualified Data.Map.Strict as Map
 
 import Control.Monad
 
@@ -22,6 +23,8 @@ setting3: True
 setting = 32.0
 
 -}
+
+type INIMap = Map.Map String Value
 
 type SectionName = String
 type Key = (SectionName,String)
@@ -106,7 +109,6 @@ readValue str | s == "yes" || s == "true"  = INIBool True
 
 -- Output code
 
-
 cmp = compare
 
 -- Sort the settings by section,key
@@ -127,4 +129,7 @@ printINI i = concatMap printSec sortedINI
                                     "[" ++ sec ++ "]\n" ++ -- Section title
                                     concatMap printKV sets -- Settings in this section
           printKV ((_,k),v) = k ++ " = " ++ show v ++ "\n" -- Render the single settings
+
+iniStructToMap :: INIStruct -> INIMap
+iniStructToMap = foldl' (\m ((sec,k),v) -> Map.insert (sec++"."++k) v m) Map.empty
 
