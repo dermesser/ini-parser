@@ -39,13 +39,16 @@ parseINI name cont = parse iniP name cont
 
 iniP :: Parser INIStruct
 iniP =   try (comment >> iniP) -- Discard comments
-     <|> try (many (oneOf " \t") >> eol >> iniP) -- Discard empty lines
+     <|> try (emptyLine >> iniP) -- Discard empty lines
      <|> try (do
                 secsettings <- section -- Section begin detected? Read settings.
                 rest <- iniP -- Parse rest of the file
                 return (secsettings ++ rest)
              )
      <|> (eof >> return []) -- End of file detected.
+
+emptyLine :: Parser ()
+emptyLine = many (oneOf " \t") >> eol
 
 comment :: Parser ()
 comment = do
@@ -63,20 +66,26 @@ section = do
     many (setting sec)
 
 setting :: SectionName -> Parser (Key, Value)
-setting sec = do
+setting sec = try $ do
+    many emptyLine
     k <- key
-    many1 (oneOf " :=")
+    separator
     val <- value
-    skipMany (oneOf " \t")
-    choice [comment,eol,eof]
+    afterValue
     return ( (sec,k) , val)
 
 key :: Parser String
 key = many1 (noneOf " :=[\n")
 
+separator :: Parser ()
+separator = many1 (oneOf " :=") >> return ()
+
 value :: Parser Value
 value = (try quotedString >>= return . readValue)
     <|> (many1 (noneOf " \n;") >>= return . readValue)
+
+afterValue :: Parser ()
+afterValue = skipMany (oneOf " \t") >> choice [comment,eol,eof] >> return ()
 
 quotedString :: Parser String
 quotedString = do
