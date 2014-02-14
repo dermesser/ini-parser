@@ -57,7 +57,7 @@ comment :: Parser ()
 comment = do
     char ';'
     many $ noneOf "\n"
-    eol
+    eol <|> eof
     return ()
 
 section :: Parser INIStruct
