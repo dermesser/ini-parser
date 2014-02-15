@@ -38,7 +38,7 @@ instance Show Value where
     show (ININumber d) = show d
 
 parseINI :: String -> String -> Either ParseError INIStruct
-parseINI name cont = parse iniP name cont
+parseINI = parse iniP
 
 iniP :: Parser INIStruct
 iniP =   try (comment >> iniP) -- Discard comments
@@ -81,14 +81,14 @@ key :: Parser String
 key = many1 (noneOf " :=[\n")
 
 separator :: Parser ()
-separator = many1 (oneOf " :=") >> return ()
+separator = void $ many1 (oneOf " :=")
 
 value :: Parser Value
-value = (try quotedString >>= return . readValue)
-    <|> (many1 (noneOf " \n;") >>= return . readValue)
+value = liftM readValue (try quotedString)
+    <|> liftM readValue (many1 (noneOf " \n;"))
 
 afterValue :: Parser ()
-afterValue = skipMany (oneOf " \t") >> choice [comment,eol,eof] >> return ()
+afterValue = void $ skipMany (oneOf " \t") >> choice [comment,eol,eof]
 
 quotedString :: Parser String
 quotedString = do
@@ -97,7 +97,7 @@ quotedString = do
     char '"'
     return str
 
-eol = newline >> return ()
+eol = void newline
 
 readValue :: String -> Value
 readValue str | s == "yes" || s == "true"  = INIBool True
