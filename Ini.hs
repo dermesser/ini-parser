@@ -19,6 +19,9 @@ setting = No
 setting2=Yes
 setting3: True
 
+; a setting w/o value is given the value True.
+implicitlyTrueSetting
+
 [section2]
 setting = 32.0
 
@@ -72,10 +75,15 @@ setting :: SectionName -> Parser (Key, Value)
 setting sec = try $ do
     many emptyLine
     k <- key
+    val <- (try settingAfterName <|> return (INIBool True))
+    return ((sec,k),val)
+
+settingAfterName :: Parser Value
+settingAfterName = do
     separator
     val <- value
     afterValue
-    return ( (sec,k) , val)
+    return val
 
 key :: Parser String
 key = many1 (noneOf " :=[\n")
