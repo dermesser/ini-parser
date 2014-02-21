@@ -13,7 +13,11 @@ import Text.Parsec.String
 
 An INI file looks like this:
 
-; comment
+; comments go after semicolons
+
+; Settings which are not in a section have "" (empty string) as section. (In the map: ".settingWithoutSection")
+settingWithoutSection = "Quoted string"
+
 [section]
 setting = No
 setting2=Yes
@@ -50,6 +54,11 @@ iniP =   try (comment >> iniP) -- Discard comments
                 secsettings <- section -- Section begin detected? Read settings.
                 rest <- iniP -- Parse rest of the file
                 return (secsettings ++ rest)
+             )
+     <|> try (do
+                set <- setting ""
+                rest <- iniP
+                return (set : rest)
              )
      <|> (eof >> return []) -- End of file detected.
 
